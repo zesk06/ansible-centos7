@@ -1,0 +1,10 @@
+---
+- name: basic
+  hosts: all
+  remote_user: vagrant
+  vars:
+    - user:
+        name: zesk
+        email: zesk06@gmail.com
+  roles:
+    - common

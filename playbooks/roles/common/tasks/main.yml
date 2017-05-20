@@ -1,0 +1,60 @@
+---
+- block:
+  - name: install packages
+    yum: name={{ item }}
+    with_items:
+      - git
+      - tree
+      - vim
+      - wget
+      - zsh
+
+  - name: install sublime text
+    unarchive:
+      src: https://download.sublimetext.com/sublime_text_3_build_3126_x64.tar.bz2
+      dest: /opt
+      remote_src: True
+
+  - name: create user {{ user.name }}
+    user:
+      name: "{{ user.name }}"
+      comment: " created by ansible"
+      shell: /bin/zsh
+      groups: wheel
+  become: yes
+- block:
+  # run a block of task while being user.name
+  - name: install oh-my-zsh
+    git:
+      repo: git://github.com/robbyrussell/oh-my-zsh.git
+      dest: /home/{{ user.name }}/.oh-my-zsh
+  - name: .zshrc exist ?
+    stat: path=~/.zshrc
+    register: dot_zshrc
+  - name: configure .zshrc
+    shell: cp .oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc
+    when: not dot_zshrc.stat.exists
+  - name: ".zshrc: ENABLE_CORRECTION=\"true\""
+    lineinfile:
+      path: ~/.zshrc
+      regexp: 'ENABLE_CORRECTION=.*$'
+      line: 'ENABLE_CORRECTION="true"'
+  - name: ".zshrc: ENABLE_CORRECTION=\"true\""
+    lineinfile:
+      path: ~/.zshrc
+      regexp: 'plugins=\(.*\)'
+      line: 'plugins=(git sublime)'
+
+  # git configuration
+  - name: git configuration
+    shell: git config --global {{ item.name }} {{ item.value }}
+    with_items:
+      - { name: "alias.st", value: "status"}
+      - { name: "alias.co", value: "checkout"}
+    tags:
+      - git
+  # all block is runned as user
+  become: yes
+  become_user: "{{ user.name }}"
+
+
